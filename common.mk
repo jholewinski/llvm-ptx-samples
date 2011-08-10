@@ -30,7 +30,7 @@ CXXFLAGS				:= -O3 -I$(CUDA_TOOLKIT)/include
 LDFLAGS					:= -lcuda
 
 CXXFLAGS_DEVICE	:= -O4 -S -emit-llvm
-OPTFLAGS				:= -O3 -loop-unroll
+OPTFLAGS				:= -O3 -loop-unroll -unroll-allow-partial
 LLCFLAGS				:= -mattr=compute20,double
 
 # Command prefix for submitting batch jobs to a scheduler

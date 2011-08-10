@@ -120,7 +120,7 @@ int main(int argc,
 
   int blockSizeX        = 16;
   int blockSizeY        = 16;
-  int blockSizeMultiple = 50;
+  int blockSizeMultiple = 100;
   int problemSizeX      = blockSizeX * blockSizeMultiple;
   int problemSizeY      = blockSizeY * blockSizeMultiple;
 
@@ -283,8 +283,8 @@ int main(int argc,
   }
 #endif
 
-  double gflopsDevice = (double)(problemSizeX * problemSizeY * problemSizeX * 2) / (deviceEnd - deviceStart) / 1e9;
-  double gflopsHost   = (double)(problemSizeX * problemSizeY * problemSizeX * 2) / (hostEnd - hostStart) / 1e9;
+  double gflopsDevice = ((double)problemSizeX * problemSizeY * problemSizeX * 2) / (deviceEnd - deviceStart) / 1e9;
+  double gflopsHost   = ((double)problemSizeX * problemSizeY * problemSizeX * 2) / (hostEnd - hostStart) / 1e9;
   
   std::cout << "Device Time:     " << (deviceEnd - deviceStart) << "s\n";
   std::cout << "Device GFlop/s:  " << gflopsDevice << "\n";
