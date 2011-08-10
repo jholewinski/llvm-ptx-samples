@@ -20,28 +20,7 @@
 # THE SOFTWARE.
 #
 
-SUBDIRS		:= \
-	kernels
-
-CLEANDIRS 	= $(SUBDIRS:%=clean-%)
-TESTDIRS	 	= $(SUBDIRS:%=test-%)
-
-.PHONY	: subdirs $(SUBDIRS)
-.PHONY	: subdirs $(CLEANDIRS)
-.PHONY	: subdirs $(TESTDIRS)
-.PHONY	: all clean test
-
-subdirs	: $(SUBDIRS)
-
-$(SUBDIRS)	:
-	@$(MAKE) -C $@
-
-test: $(TESTDIRS) all
-$(TESTDIRS): 
-	$(MAKE) -C $(@:test-%=%) test
-
-clean: $(CLEANDIRS)
-$(CLEANDIRS): 
-	$(MAKE) -C $(@:clean-%=%) clean
+NAME	:= matrix-multiply
 
 
+include ../../common.mk

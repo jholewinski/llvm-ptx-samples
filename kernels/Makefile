@@ -21,11 +21,28 @@
 #
 
 
-all	:
-	@$(MAKE) -C vector-add all
+SUBDIRS		:= \
+	vector-add \
+	matrix-multiply
 
-test	:
-	@$(MAKE) -C vector-add test
+CLEANDIRS 	= $(SUBDIRS:%=clean-%)
+TESTDIRS	 	= $(SUBDIRS:%=test-%)
 
-clean	:
-	@$(MAKE) -C vector-add clean
+.PHONY	: subdirs $(SUBDIRS)
+.PHONY	: subdirs $(CLEANDIRS)
+.PHONY	: subdirs $(TESTDIRS)
+.PHONY	: all clean test
+
+subdirs	: $(SUBDIRS)
+
+$(SUBDIRS)	:
+	@$(MAKE) -C $@
+
+test: $(TESTDIRS) all
+$(TESTDIRS): 
+	$(MAKE) -C $(@:test-%=%) test
+
+clean: $(CLEANDIRS)
+$(CLEANDIRS): 
+	$(MAKE) -C $(@:clean-%=%) clean
+
