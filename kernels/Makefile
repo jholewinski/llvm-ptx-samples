@@ -20,52 +20,12 @@
 # THE SOFTWARE.
 #
 
-CUDA_TOOLKIT		:= /usr/local/cuda
-CXX					  	:= g++
-DEVICECXX	  		:= clang++
 
-CXXFLAGS				:= -O3 -I$(CUDA_TOOLKIT)/include
-LDFLAGS					:= -lcuda
+all	:
+	@$(MAKE) -C vector-add all
 
-CXXFLAGS_DEVICE	:= -O3 -S
+test	:
+	@$(MAKE) -C vector-add test
 
-# Command prefix for submitting batch jobs to a scheduler
-SUBMIT					:=
-
-
-# Detect architecture
-ARCH						= $(shell uname -m)
-
-ifeq ($(ARCH), x86_64)
-	CXXFLAGS_DEVICE		+= -ccc-host-triple ptx64
-	CXXFLAGS					+= -m64
-else
-	CXXFLAGS_DEVICE		+= -ccc-host-triple ptx32
-	CXXFLAGS					+= -m32
-endif
-
-
-ifeq ($(VERBOSE), 1)
-	VERBOSE_PREFIX	 	:=
-else
-  VERBOSE_PREFIX   	:= @
-endif
-
-
-
-all	: $(NAME).x $(NAME).kernel.ptx
-
-clean:
-	@rm -f $(NAME).x $(NAME).kernel.ptx *.log
-
-test	: all
-	@echo "[TEST] $(NAME)"
-	$(VERBOSE_PREFIX)$(SUBMIT) ./$(NAME).x
-
-$(NAME).x	: $(NAME).cpp
-	@echo "[HOST-C++]   $(NAME).cpp"
-	$(VERBOSE_PREFIX)$(CXX) $(CXXFLAGS) $(NAME).cpp -o $(NAME).x $(LDFLAGS)
-
-$(NAME).kernel.ptx	: $(NAME).kernel.cpp
-	@echo "[DEVICE-C++] $(NAME).kernel.cpp"
-	$(VERBOSE_PREFIX)$(DEVICECXX) $(CXXFLAGS_DEVICE) $(NAME).kernel.cpp -o $(NAME).kernel.ptx
+clean	:
+	@$(MAKE) -C vector-add clean
