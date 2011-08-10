@@ -23,11 +23,15 @@
 CUDA_TOOLKIT		:= /usr/local/cuda
 CXX					  	:= g++
 DEVICECXX	  		:= clang++
+OPT							:= opt
+LLC							:= llc
 
 CXXFLAGS				:= -O3 -I$(CUDA_TOOLKIT)/include
 LDFLAGS					:= -lcuda
 
-CXXFLAGS_DEVICE	:= -O3 -S
+CXXFLAGS_DEVICE	:= -O4 -S -emit-llvm
+OPTFLAGS				:= -O3 -loop-unroll
+LLCFLAGS				:= -mattr=compute20,double
 
 # Command prefix for submitting batch jobs to a scheduler
 SUBMIT					:=
@@ -56,7 +60,7 @@ endif
 all	: $(NAME).x $(NAME).kernel.ptx
 
 clean:
-	@rm -f $(NAME).x $(NAME).kernel.ptx *.log
+	@rm -f $(NAME).x $(NAME).kernel.ptx *.log $(NAME).kernel.ll
 
 test	: all
 	@echo "[TEST] $(NAME)"
@@ -68,4 +72,6 @@ $(NAME).x	: $(NAME).cpp
 
 $(NAME).kernel.ptx	: $(NAME).kernel.cpp
 	@echo "[DEVICE-C++] $(NAME).kernel.cpp"
-	$(VERBOSE_PREFIX)$(DEVICECXX) $(CXXFLAGS_DEVICE) $(NAME).kernel.cpp -o $(NAME).kernel.ptx
+	$(VERBOSE_PREFIX)$(DEVICECXX) $(CXXFLAGS_DEVICE) $(NAME).kernel.cpp -o $(NAME).kernel.ll
+	$(VERBOSE_PREFIX)$(OPT) $(OPTFLAGS) $(NAME).kernel.ll -S -o $(NAME).kernel.ll
+	$(VERBOSE_PREFIX)$(LLC) $(LLCFLAGS) $(NAME).kernel.ll -o $(NAME).kernel.ptx
