@@ -30,3 +30,28 @@ Toolkit installed in /opt/cuda, you can build the samples with:
     $ make all CXX=g++-4.5 CUDA_TOOLKIT=/opt/cuda
 
 
+
+Examples
+--------
+
+### Vector Addition (kernels/vector-add)
+
+This example shows the simplest use-case for generating CUDA kernel code from
+Clang.  The implemented kernel performs a simple vector addition, where each
+device thread is responsible for computing one element of the output vector.
+
+
+### Matrix Multiplication (kernels/matrix-multiply)
+
+This examples shows a simple matrix multiplication kernel, where each device
+thread is responsible for computing one element of the output matrix.  All
+memory accesses are performed on global memory for example purposes.
+
+
+### Tiled Matrix Multiplication (kernels/matrix-multiply-tiled)
+
+This is a variant of the matrix multiplication example that uses shared memory
+to improve the performance of the kernel by processing blocks of the matrix at
+a time.  This example shows how to use shared memory in device kernels, as well
+as how to use thread synchronization primitives.
+
