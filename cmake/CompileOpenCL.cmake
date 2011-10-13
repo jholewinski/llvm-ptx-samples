@@ -25,20 +25,20 @@ set(CLANG_OPENCL_CFLAGS -ccc-host-triple ptx32 -S -emit-llvm -I${LIBCLC}/include
 
 macro(compile_opencl _ptxout _src)
   message(STATUS "OpenCL: ${CMAKE_CURRENT_SOURCE_DIR}/${_src} -> ${CMAKE_CURRENT_BINARY_DIR}/${_src}.ll")
-  add_custom_command(OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${_src}.ll
+  add_custom_command(OUTPUT  ${_src}.ll
                      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${_src}
-                     COMMAND ${CLANG_PROGRAM} ${CMAKE_CURRENT_SOURCE_DIR}/${_src} ${CLANG_OPENCL_CFLAGS} -o ${CMAKE_CURRENT_BINARY_DIR}/${_src}.ll
+                     COMMAND ${CLANG_PROGRAM} ${CMAKE_CURRENT_SOURCE_DIR}/${_src} ${CLANG_OPENCL_CFLAGS} -o ${_src}.ll
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-  add_custom_command(OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${_src}.opt.ll
-                     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${_src}.ll
-                     COMMAND ${OPT_PROGRAM} -O3 -loop-unroll -S ${CMAKE_CURRENT_BINARY_DIR}/${_src}.ll -o ${CMAKE_CURRENT_BINARY_DIR}/${_src}.opt.ll
+  add_custom_command(OUTPUT  ${_src}.opt.ll
+                     DEPENDS ${_src}.ll
+                     COMMAND ${OPT_PROGRAM} -O3 -loop-unroll -S ${_src}.ll -o ${_src}.opt.ll
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-  add_custom_command(OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${_ptxout}
-                     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${_src}.opt.ll
-                     COMMAND ${LLC_PROGRAM} -march=ptx32 -mattr=ptx23 ${CMAKE_CURRENT_BINARY_DIR}/${_src}.ll -o ${_ptxout}
+  add_custom_command(OUTPUT  ${_ptxout}
+                     DEPENDS ${_src}.opt.ll
+                     COMMAND ${LLC_PROGRAM} -march=ptx32 -mattr=ptx23 ${_src}.ll -o ${_ptxout}
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${_src}.ll PROPERTIES GENERATED TRUE)
   set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${_src}.opt.ll PROPERTIES GENERATED TRUE)
-  set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${_src}.ptx PROPERTIES GENERATED TRUE)
+  set_source_files_properties(${_ptxout} PROPERTIES GENERATED TRUE)
   add_custom_target(${_ptxout}-build DEPENDS ${_ptxout})
 endmacro()

@@ -27,12 +27,12 @@
 #define BLOCK_SIZE 16
 
 char CLKernel[] = {
-  #include "matmul_kernel.cl.h"
+  #include "matmul_kernel.cl.res"
   , 0x0
 };
 
 char PTXKernel[] = {
-  #include "matmul_kernel.ptx.h"
+  #include "matmul_kernel.ptx.res"
   , 0x0
 };
 
