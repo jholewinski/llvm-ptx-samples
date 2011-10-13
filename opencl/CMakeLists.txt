@@ -20,7 +20,4 @@
 # THE SOFTWARE.
 #
 
-NAME	:= matrix-multiply-tiled
-
-
-include ../../common.mk
+add_subdirectory(matmul)

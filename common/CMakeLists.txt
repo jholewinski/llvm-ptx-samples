@@ -20,7 +20,9 @@
 # THE SOFTWARE.
 #
 
-NAME	:= vector-add
+set(_sources  OCLSample.cpp)
 
+set(_headers  OCLSample.hpp
+              Sample.hpp)
 
-include ../../common.mk
+add_library(sampleutil STATIC ${_sources} ${_headers})

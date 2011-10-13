@@ -20,7 +20,18 @@
 # THE SOFTWARE.
 #
 
-NAME	:= matrix-multiply
+set(_sources  matmul.cpp)
 
+set(_resources  matmul_kernel.cl.h
+                ${CMAKE_CURRENT_BINARY_DIR}/matmul_kernel.ptx.h)
 
-include ../../common.mk
+compile_opencl(matmul_kernel.ptx matmul_kernel.cl)
+
+embed_resource(matmul_kernel.cl.h ${CMAKE_CURRENT_SOURCE_DIR}/matmul_kernel.cl)
+embed_resource(matmul_kernel.ptx.h matmul_kernel.ptx)
+
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+add_executable(ocl-matmul ${_sources} ${_resources})
+target_link_libraries(ocl-matmul ${OPENCL_LIBRARY} sampleutil)
+
+add_dependencies(ocl-matmul matmul_kernel.cl.h-build matmul_kernel.ptx-build matmul_kernel.ptx.h-build)

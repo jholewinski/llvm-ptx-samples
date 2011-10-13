@@ -1,0 +1,3 @@
+[submodule "libclc"]
+	path = libclc
+	url = git://git.pcc.me.uk/~peter/libclc.git

@@ -20,28 +20,11 @@
 # THE SOFTWARE.
 #
 
-SUBDIRS		:= \
-	kernels
-
-CLEANDIRS 	= $(SUBDIRS:%=clean-%)
-TESTDIRS	 	= $(SUBDIRS:%=test-%)
-
-.PHONY	: subdirs $(SUBDIRS)
-.PHONY	: subdirs $(CLEANDIRS)
-.PHONY	: subdirs $(TESTDIRS)
-.PHONY	: all clean test
-
-subdirs	: $(SUBDIRS)
-
-$(SUBDIRS)	:
-	@$(MAKE) -C $@
-
-test: $(TESTDIRS) all
-$(TESTDIRS): 
-	$(MAKE) -C $(@:test-%=%) test
-
-clean: $(CLEANDIRS)
-$(CLEANDIRS): 
-	$(MAKE) -C $(@:clean-%=%) clean
-
-
+macro(embed_resource _res _src)
+  add_custom_command(OUTPUT  ${_res}
+                     DEPENDS ${_src}
+                     COMMAND ${XXD_PROGRAM} -i < ${_src} > ${_res}
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  set_source_files_properties(${_res} PROPERTIES GENERATED TRUE)
+  add_custom_target(${_res}-build DEPENDS ${_res})
+endmacro()
