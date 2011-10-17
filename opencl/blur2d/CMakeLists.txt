@@ -20,6 +20,10 @@
 # THE SOFTWARE.
 #
 
-add_subdirectory(blur2d)
-add_subdirectory(matmul)
-add_subdirectory(matmul-double)
+set(_cpp_sources blur2d.cpp)
+
+create_opencl_targets(_cl_targets blur2d_kernel)
+
+add_executable(ocl-blur2d ${_cpp_sources})
+target_link_libraries(ocl-blur2d ${OPENCL_LIBRARY} sampleutil)
+add_dependencies(ocl-blur2d ${_cl_targets})
