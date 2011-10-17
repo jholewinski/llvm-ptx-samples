@@ -39,13 +39,50 @@ public:
 
 protected:
 
+  /**
+   * Hook for samples to perform any initialization.
+   */
   virtual void initialize();
-  virtual void runSourceKernel();
-  virtual void runBinaryKernel();
+
+  /**
+   * Hook for samples to allocate any needed memory buffers.
+   */
+  virtual void createMemoryBuffers();
+
+  /**
+   * Hook for samples to perform any kernel setup, such as copying data from
+   * the host to the device.
+   */
+  virtual void setupKernel(cl::Kernel kernel);
+
+  /**
+   * Hook for samples to perform any kernel finalization, such as copying data
+   * from the device to the host. */
+  virtual void finishKernel(cl::Kernel kernel);
+
+  /**
+   * Hook for samples to run the requested kernel.
+   */
+  virtual void runKernel(cl::Kernel kernel, cl::Event* evt);
 
   cl::Program compileSource(const std::string& source);
   cl::Program loadBinary(const std::string& binary);
 
+  void setSourceKernel(cl::Kernel kernel) {
+    sourceKernel_ = kernel;
+  }
+
+  cl::Kernel getSourceKernel() {
+    return sourceKernel_;
+  }
+
+  void setBinaryKernel(cl::Kernel kernel) {
+    binaryKernel_ = kernel;
+  }
+
+  cl::Kernel getBinaryKernel() {
+    return binaryKernel_;
+  }
 
   cl::Context& getContext() {
     return context_;
@@ -55,14 +92,27 @@ protected:
     return queue_;
   }
 
+  unsigned getNumberOfIterations() const {
+    return numIterations_;
+  }
+
+  void setNumberOfIterations(unsigned iters) {
+    numIterations_ = iters;
+  }
+
 private:
 
   void initOpenCL();
+  void timeKernel(cl::Kernel kernel, double& elapsed, double& average);
 
   cl::Platform     platform_;
   cl::Device       device_;
   cl::Context      context_;
   cl::CommandQueue queue_;
+  cl::Kernel       sourceKernel_;
+  cl::Kernel       binaryKernel_;
+  unsigned         numIterations_;
+
 };
 
 #endif

@@ -22,10 +22,12 @@
 
 #include <vector>
 #include <iostream>
+#include <fstream>
 #include <cassert>
 #include "common/OCLSample.hpp"
 
-OCLSample::OCLSample() {
+OCLSample::OCLSample()
+: numIterations_(4) {
   initOpenCL();
 }
 
@@ -35,23 +37,83 @@ OCLSample::~OCLSample() {
 void OCLSample::initialize() {
 }
 
-void OCLSample::runSourceKernel() {
+void OCLSample::createMemoryBuffers() {
 }
 
-void OCLSample::runBinaryKernel() {
+void OCLSample::setupKernel(cl::Kernel kernel) {
+}
+
+void OCLSample::finishKernel(cl::Kernel kernel) {
+}
+
+void OCLSample::runKernel(cl::Kernel kernel, cl::Event* evt) {
 }
 
 void OCLSample::run() {
-  std::cout << "Initializing run\n";
+  double elapsed, average;
+
   initialize();
-  std::cout << "Running OpenCL kernel as source\n";
-  runSourceKernel();
-  std::cout << "Running compiled OpenCL kernel from clang\n";
-  runBinaryKernel();
+  createMemoryBuffers();
+
+  std::cout << "------------------------------\n";
+  std::cout << "* Source Kernel\n";
+  std::cout << "------------------------------\n";
+  setupKernel(sourceKernel_);
+  timeKernel(sourceKernel_, elapsed, average);
+  finishKernel(sourceKernel_);
+
+  std::cout << "Number of Iterations: " << numIterations_ << "\n";
+  std::cout << "Total Time:           " << elapsed << " sec\n";
+  std::cout << "Average Time:         " << average << " sec\n";
+
+  std::cout << "------------------------------\n";
+  std::cout << "* Binary Kernel\n";
+  std::cout << "------------------------------\n";
+  setupKernel(binaryKernel_);
+  timeKernel(binaryKernel_, elapsed, average);
+  finishKernel(binaryKernel_);
+
+  std::cout << "Number of Iterations: " << numIterations_ << "\n";
+  std::cout << "Total Time:           " << elapsed << " sec\n";
+  std::cout << "Average Time:         " << average << " sec\n";
 }
 
-cl::Program OCLSample::compileSource(const std::string& source) {
+void OCLSample::timeKernel(cl::Kernel kernel, double& elapsed,
+                           double& average) {
+  cl::Event* events = new cl::Event[numIterations_];
   cl_int result;
+
+  elapsed = 0.0;
+
+  for(unsigned i = 0; i < numIterations_; ++i) {
+    cl_ulong start, end;
+    runKernel(kernel, &events[i]);
+
+    queue_.flush();
+    events[i].wait();
+
+    result = events[i].getProfilingInfo<cl_ulong>(CL_PROFILING_COMMAND_START,
+                                                  &start);
+    assert(result == CL_SUCCESS && "Unable to get profiling information");
+    result = events[i].getProfilingInfo<cl_ulong>(CL_PROFILING_COMMAND_END,
+                                                  &end);
+    assert(result == CL_SUCCESS && "Unable to get profiling information");
+    elapsed += (double)1e-9 * (end - start);
+  }
+
+  average = elapsed / (double)numIterations_;
+
+  delete [] events;
+}
+
+cl::Program OCLSample::compileSource(const std::string& filename) {
+  cl_int result;
+
+  std::ifstream kernelStream(filename.c_str());
+  std::string source(std::istreambuf_iterator<char>(kernelStream),
+                     (std::istreambuf_iterator<char>()));
+  kernelStream.close();
+
   cl::Program::Sources sources(1, std::make_pair(source.c_str(),
                                                  source.size()));
   cl::Program program(context_, sources, &result);
@@ -67,8 +129,14 @@ cl::Program OCLSample::compileSource(const std::string& source) {
   return program;
 }
 
-cl::Program OCLSample::loadBinary(const std::string& binary) {
+cl::Program OCLSample::loadBinary(const std::string& filename) {
   cl_int result;
+
+  std::ifstream kernelStream(filename.c_str());
+  std::string binary(std::istreambuf_iterator<char>(kernelStream),
+                     (std::istreambuf_iterator<char>()));
+  kernelStream.close();
+
   cl::Program::Binaries binaries(1, std::make_pair(binary.c_str(),
                                                    binary.size()));
   std::vector<cl::Device> devices;

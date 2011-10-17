@@ -35,17 +35,15 @@ public:
 protected:
 
   virtual void initialize();
-  virtual void runSourceKernel();
-  virtual void runBinaryKernel();
+  virtual void createMemoryBuffers();
+  virtual void setupKernel(cl::Kernel kernel);
+  virtual void finishKernel(cl::Kernel kernel);
+  virtual void runKernel(cl::Kernel kernel, cl::Event* evt);
 
 private:
 
-  void runKernel(cl::Kernel& kernel);
-
   cl::Program programCL_;
-  cl::Kernel  kernelCL_;
   cl::Program programPTX_;
-  cl::Kernel  kernelPTX_;
 
   cl::Buffer  deviceA_;
   cl::Buffer  deviceB_;
@@ -68,62 +66,23 @@ MatMulSample::MatMulSample() {
 void MatMulSample::initialize() {
   cl_int result;
 
-  std::cout << "Using problem size: " << ProblemSize_ << " x " << ProblemSize_
-            << "\n";
+  programCL_ = compileSource("matmul_kernel.cl");
+  programPTX_ = loadBinary("matmul_kernel.ptx");
 
-  // Create host buffers
-  hostA_ = new float[ArraySize_];
-  hostB_ = new float[ArraySize_];
-  hostC_ = new float[ArraySize_];
-
-  {
-    std::ifstream kernelStream("matmul_kernel.cl");
-    std::string kernelSource(std::istreambuf_iterator<char>(kernelStream),
-                             (std::istreambuf_iterator<char>()));
-    kernelStream.close();
-    programCL_ = compileSource(kernelSource);
-  }
-
-  {
-    std::ifstream kernelStream("matmul_kernel.ptx");
-    std::string kernelSource(std::istreambuf_iterator<char>(kernelStream),
-                             (std::istreambuf_iterator<char>()));
-    kernelStream.close();
-    programPTX_ = loadBinary(kernelSource);
-  }
-
-  kernelCL_  = cl::Kernel(programCL_, "matmul", &result);
+  cl::Kernel kernelCL = cl::Kernel(programCL_, "matmul", &result);
   assert(result == CL_SUCCESS && "Failed to extract kernel");
-  kernelPTX_ = cl::Kernel(programPTX_, "matmul", &result);
+  cl::Kernel kernelPTX = cl::Kernel(programPTX_, "matmul", &result);
   assert(result == CL_SUCCESS && "Failed to extract kernel");
 
-  // Create device memory buffers
-  deviceA_ = cl::Buffer(getContext(), CL_MEM_READ_ONLY,
-                        ArraySize_*sizeof(float), NULL, &result);
-  assert(result == CL_SUCCESS && "Failed to allocate device buffer");
-  deviceB_ = cl::Buffer(getContext(), CL_MEM_READ_ONLY,
-                        ArraySize_*sizeof(float), NULL, &result);
-  assert(result == CL_SUCCESS && "Failed to allocate device buffer");
-  deviceC_ = cl::Buffer(getContext(), CL_MEM_WRITE_ONLY,
-                        ArraySize_*sizeof(float), NULL, &result);
-  assert(result == CL_SUCCESS && "Failed to allocate device buffer");
+  setSourceKernel(kernelCL);
+  setBinaryKernel(kernelPTX);
+
+  // For this sample, let's run 16 iterations
+  setNumberOfIterations(16);
 }
 
-void MatMulSample::runKernel(cl::Kernel& kernel) {
+void MatMulSample::runKernel(cl::Kernel kernel, cl::Event* evt) {
   cl_int result;
-  cl::Event kernelEvent;
-  cl_ulong kernelStart, kernelEnd;
-
-  // Copy data to device
-  result = getCommandQueue().enqueueWriteBuffer(deviceA_, CL_TRUE, 0,
-                                                ArraySize_*sizeof(float),
-                                                hostA_, NULL, NULL);
-  assert(result == CL_SUCCESS && "Failed to queue data copy to device");
-  result = getCommandQueue().enqueueWriteBuffer(deviceB_, CL_TRUE, 0,
-                                                ArraySize_*sizeof(float),
-                                                hostB_, NULL, NULL);
-  assert(result == CL_SUCCESS && "Failed to queue data copy to device");
-
   cl::NDRange globalSize(ProblemSize_, ProblemSize_);
   cl::NDRange localSize(BLOCK_SIZE, BLOCK_SIZE);
 
@@ -136,35 +95,52 @@ void MatMulSample::runKernel(cl::Kernel& kernel) {
 
   result = getCommandQueue().enqueueNDRangeKernel(kernel, cl::NullRange,
                                                   globalSize, localSize, 0,
-                                                  &kernelEvent);
+                                                  evt);
   assert(result == CL_SUCCESS && "Failed to launch kernel");
+}
 
-  getCommandQueue().flush();
-  kernelEvent.wait();
+void MatMulSample::createMemoryBuffers() {
+  cl_int result;
 
-  // Copy data back to host
+  // Create host buffers
+  hostA_ = new float[ArraySize_];
+  hostB_ = new float[ArraySize_];
+  hostC_ = new float[ArraySize_];
+
+  // Create device buffers
+  deviceA_ = cl::Buffer(getContext(), CL_MEM_READ_ONLY,
+                        ArraySize_*sizeof(float), NULL, &result);
+  assert(result == CL_SUCCESS && "Failed to allocate device buffer");
+  deviceB_ = cl::Buffer(getContext(), CL_MEM_READ_ONLY,
+                        ArraySize_*sizeof(float), NULL, &result);
+  assert(result == CL_SUCCESS && "Failed to allocate device buffer");
+  deviceC_ = cl::Buffer(getContext(), CL_MEM_WRITE_ONLY,
+                        ArraySize_*sizeof(float), NULL, &result);
+  assert(result == CL_SUCCESS && "Failed to allocate device buffer");
+}
+
+void MatMulSample::setupKernel(cl::Kernel kernel) {
+  cl_int result;
+
+  // Copy data to device
+  result = getCommandQueue().enqueueWriteBuffer(deviceA_, CL_TRUE, 0,
+                                                ArraySize_*sizeof(float),
+                                                hostA_, NULL, NULL);
+  assert(result == CL_SUCCESS && "Failed to queue data copy to device");
+  result = getCommandQueue().enqueueWriteBuffer(deviceB_, CL_TRUE, 0,
+                                                ArraySize_*sizeof(float),
+                                                hostB_, NULL, NULL);
+  assert(result == CL_SUCCESS && "Failed to queue data copy to device");
+}
+
+void MatMulSample::finishKernel(cl::Kernel kernel) {
+  cl_int result;
+
+    // Copy data back to host
   result = getCommandQueue().enqueueReadBuffer(deviceC_, CL_TRUE, 0,
                                                 ArraySize_*sizeof(float),
                                                 hostC_, NULL, NULL);
   assert(result == CL_SUCCESS && "Failed to queue data copy to host");
-
-  result = kernelEvent.getProfilingInfo<cl_ulong>(CL_PROFILING_COMMAND_START,
-                                                  &kernelStart);
-  assert(result == CL_SUCCESS && "Unable to get profiling information");
-  result = kernelEvent.getProfilingInfo<cl_ulong>(CL_PROFILING_COMMAND_END,
-                                                  &kernelEnd);
-  assert(result == CL_SUCCESS && "Unable to get profiling information");
-
-  double elapsed = (double)1e-9 * (kernelEnd - kernelStart);
-  std::cout << "Elapsed: " << elapsed << "s\n";
-}
-
-void MatMulSample::runSourceKernel() {
-  runKernel(kernelCL_);
-}
-
-void MatMulSample::runBinaryKernel() {
-  runKernel(kernelPTX_);
 }
 
 int main(int argc, char** argv) {
