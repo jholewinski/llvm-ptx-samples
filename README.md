@@ -24,8 +24,9 @@ For most systems, the following build commands can be used:
 
 If CMake complains that it cannot find a CUDA toolkit, please add -DCUDA_TOOLKIT_ROOT_DIR=... to your CMake invocation, specifying the root of your CUDA installation. Similarly, if Clang or the other LLVM tools cannot be found, please adjust your PATH to include them.
 
-Once the samples are built, they can be executed from their build directory, which mirrors the layout of the source directory. For example, to run the matrix multiplication sample, you can execute:
+Once the samples are built, they can be executed from the bin/ directory, created within your build directory. For example, to run the matrix multiplication sample, you can execute:
 
-    $ ./opencl/matmul/ocl-matmul
+    $ cd bin
+    $ ./ocl-matmul
 
 from your build directory.
