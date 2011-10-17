@@ -20,25 +20,65 @@
 # THE SOFTWARE.
 #
 
+# Compiler flags
 set(LIBCLC ${CMAKE_SOURCE_DIR}/libclc)
-set(CLANG_OPENCL_CFLAGS -ccc-host-triple ptx32 -S -emit-llvm -I${LIBCLC}/include/ptx -I${LIBCLC}/include/generic -include clc/clc.h -Dcl_clang_storage_class_specifiers)
+set(LIBCLC_FLAGS -I${LIBCLC}/include/ptx -I${LIBCLC}/include/generic -include clc/clc.h -Dcl_clang_storage_class_specifiers)
+set(CLANG_FLAGS -ccc-host-triple ptx32 -S -emit-llvm -O4 ${LIBCLC_FLAGS})
+set(OPT_FLAGS -O3 -loop-unroll)
+set(LLC_FLAGS -mattr=ptx23)
 
-macro(compile_opencl _ptxout _src)
-  message(STATUS "OpenCL: ${CMAKE_CURRENT_SOURCE_DIR}/${_src} -> ${CMAKE_CURRENT_BINARY_DIR}/${_src}.ll")
-  add_custom_command(OUTPUT  ${_src}.ll
-                     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${_src}
-                     COMMAND ${CLANG_PROGRAM} ${CMAKE_CURRENT_SOURCE_DIR}/${_src} ${CLANG_OPENCL_CFLAGS} -o ${_src}.ll
-                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-  add_custom_command(OUTPUT  ${_src}.opt.ll
-                     DEPENDS ${_src}.ll
-                     COMMAND ${OPT_PROGRAM} -O3 -loop-unroll -S ${_src}.ll -o ${_src}.opt.ll
-                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-  add_custom_command(OUTPUT  ${_ptxout}
-                     DEPENDS ${_src}.opt.ll
-                     COMMAND ${LLC_PROGRAM} -march=ptx32 -mattr=ptx23 ${_src}.ll -o ${_ptxout}
-                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-  set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${_src}.ll PROPERTIES GENERATED TRUE)
-  set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${_src}.opt.ll PROPERTIES GENERATED TRUE)
-  set_source_files_properties(${_ptxout} PROPERTIES GENERATED TRUE)
-  add_custom_target(${_ptxout}-build DEPENDS ${_ptxout})
+set(RESOURCE_OUTPUT_DIR ${CMAKE_BINARY_DIR}/bin)
+
+# By default, _llout is assumed to be relative to RESOURCE_OUTPUT_DIR and
+# _srcin is assumed to be relative to CMAKE_CURRENT_SOURCE_DIR
+macro(compile_opencl_to_llvmir _llout _srcin)
+  get_filename_component(_srcin_abs ${_srcin} ABSOLUTE)
+  add_custom_command(OUTPUT ${RESOURCE_OUTPUT_DIR}/${_llout}
+                     DEPENDS ${_srcin_abs}
+                     COMMAND ${CLANG_PROGRAM} ${CLANG_FLAGS} ${_srcin_abs} -o ${_llout}
+                     WORKING_DIRECTORY ${RESOURCE_OUTPUT_DIR}
+                     COMMENT "Compiling ${_srcin} -> ${_llout}")
+  add_custom_target(${_llout} DEPENDS ${RESOURCE_OUTPUT_DIR}/${_llout})
+endmacro()
+
+macro(optimize_llvmir _llout _llin)
+  set(_llout_abs ${RESOURCE_OUTPUT_DIR}/${_llout})
+  set(_llin_abs ${RESOURCE_OUTPUT_DIR}/${_llin})
+  add_custom_command(OUTPUT ${_llout_abs}
+                     DEPENDS ${_llin_abs}
+                     COMMAND ${OPT_PROGRAM} -S ${OPT_FLAGS} ${_llin_abs} -o ${_llout_abs}
+                     WORKING_DIRECTORY ${RESOURCE_OUTPUT_DIR}
+                     COMMENT "Optimizing ${_llin} -> ${_llout}")
+  add_custom_target(${_llout} DEPENDS ${_llout_abs})
+endmacro()
+
+macro(codegen_ptx _ptxout _llin)
+  set(_ptxout_abs ${RESOURCE_OUTPUT_DIR}/${_ptxout})
+  set(_llin_abs ${RESOURCE_OUTPUT_DIR}/${_llin})
+  add_custom_command(OUTPUT ${_ptxout_abs}
+                     DEPENDS ${_llin_abs}
+                     COMMAND ${LLC_PROGRAM} ${LLC_FLAGS} ${_llin_abs} -o ${_ptxout_abs}
+                     WORKING_DIRECTORY ${RESOURCE_OUTPUT_DIR}
+                     COMMENT "Compiling ${_llin} -> ${_ptxout}")
+  add_custom_target(${_ptxout} DEPENDS ${_ptxout_abs})
+endmacro()
+
+macro(copy_opencl _clin)
+  set(_dest_abs ${RESOURCE_OUTPUT_DIR}/${_clin})
+  set(_src_abs ${CMAKE_CURRENT_SOURCE_DIR}/${_clin})
+  add_custom_command(OUTPUT ${_dest_abs}
+                     DEPENDS ${_src_abs}
+                     COMMAND ${CMAKE_COMMAND} -E copy ${_src_abs} ${_dest_abs}
+                     WORKING_DIRECTORY ${RESOURCE_OUTPUT_DIR}
+                     COMMENT "Copying OpenCL source ${_clin}")
+  add_custom_target(${_clin} DEPENDS ${_dest_abs})
+endmacro()
+
+macro(create_opencl_targets _targets _kernel)
+  set(${_targets})
+  compile_opencl_to_llvmir(${_kernel}.ll ${_kernel}.cl)
+  optimize_llvmir(${_kernel}.opt.ll ${_kernel}.ll)
+  codegen_ptx(${_kernel}.ptx ${_kernel}.opt.ll)
+  copy_opencl(${_kernel}.cl)
+  list(APPEND ${_targets} ${_kernel}.ptx ${_kernel}.cl)
 endmacro()

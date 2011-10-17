@@ -49,15 +49,7 @@ find_program(LLC_PROGRAM NAMES llc)
 if(NOT LLC_PROGRAM)
   message(FATAL_ERROR "Unable to locate llc.")
 else()
-  message(STATUS "Found opt: ${LLC_PROGRAM}")
-endif()
-
-# Locate xxd
-find_program(XXD_PROGRAM NAMES xxd)
-if(NOT XXD_PROGRAM)
-  message(FATAL_ERROR "Unable to locate xxd.")
-else()
-  message(STATUS "Found xxd: ${XXD_PROGRAM}")
+  message(STATUS "Found llc: ${LLC_PROGRAM}")
 endif()
 
 # Locate OpenCL library
@@ -67,6 +59,10 @@ if(NOT OPENCL_LIBRARY)
 else()
   message(STATUS "Found OpenCL: ${OPENCL_LIBRARY}")
 endif()
+
+# Prep our bin directory
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 
 # Include our custom build code
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CompileOpenCL.cmake)

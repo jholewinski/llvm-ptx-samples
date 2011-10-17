@@ -26,5 +26,5 @@ macro(embed_resource _res _src)
                      COMMAND ${XXD_PROGRAM} -i < ${_src} > ${_res}
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_source_files_properties(${_res} PROPERTIES GENERATED TRUE)
-  add_custom_target(${_res}-build DEPENDS ${_res})
+  add_custom_target(${_res} DEPENDS ${_res})
 endmacro()

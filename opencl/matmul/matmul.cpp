@@ -22,19 +22,10 @@
 
 #include <cassert>
 #include <iostream>
+#include <fstream>
 #include "common/OCLSample.hpp"
 
 #define BLOCK_SIZE 16
-
-char CLKernel[] = {
-  #include "matmul_kernel.cl.res"
-  , 0x0
-};
-
-char PTXKernel[] = {
-  #include "matmul_kernel.ptx.res"
-  , 0x0
-};
 
 class MatMulSample : public OCLSample {
 public:
@@ -85,8 +76,21 @@ void MatMulSample::initialize() {
   hostB_ = new float[ArraySize_];
   hostC_ = new float[ArraySize_];
 
-  programCL_  = compileSource(CLKernel);
-  programPTX_ = loadBinary(PTXKernel);
+  {
+    std::ifstream kernelStream("matmul_kernel.cl");
+    std::string kernelSource(std::istreambuf_iterator<char>(kernelStream),
+                             (std::istreambuf_iterator<char>()));
+    kernelStream.close();
+    programCL_ = compileSource(kernelSource);
+  }
+
+  {
+    std::ifstream kernelStream("matmul_kernel.ptx");
+    std::string kernelSource(std::istreambuf_iterator<char>(kernelStream),
+                             (std::istreambuf_iterator<char>()));
+    kernelStream.close();
+    programPTX_ = loadBinary(kernelSource);
+  }
 
   kernelCL_  = cl::Kernel(programCL_, "matmul", &result);
   assert(result == CL_SUCCESS && "Failed to extract kernel");
