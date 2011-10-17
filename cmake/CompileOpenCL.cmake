@@ -25,7 +25,7 @@ set(LIBCLC ${CMAKE_SOURCE_DIR}/libclc)
 set(LIBCLC_FLAGS -I${LIBCLC}/include/ptx -I${LIBCLC}/include/generic -include clc/clc.h -Dcl_clang_storage_class_specifiers)
 set(CLANG_FLAGS -ccc-host-triple ptx32 -S -emit-llvm -O4 ${LIBCLC_FLAGS})
 set(OPT_FLAGS -O3 -loop-unroll)
-set(LLC_FLAGS -mattr=ptx23)
+set(LLC_FLAGS -mattr=ptx23,double,sm13)
 
 set(RESOURCE_OUTPUT_DIR ${CMAKE_BINARY_DIR}/bin)
 

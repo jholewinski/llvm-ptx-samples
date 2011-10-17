@@ -20,5 +20,26 @@
 # THE SOFTWARE.
 #
 
-add_subdirectory(matmul)
-add_subdirectory(matmul-double)
+#set(_sources  matmul.cpp)
+#
+#set(_resources  ${CMAKE_CURRENT_BINARY_DIR}/matmul_kernel.cl.res
+#                ${CMAKE_CURRENT_BINARY_DIR}/matmul_kernel.ptx.res)
+#
+#compile_opencl(matmul_kernel.ptx matmul_kernel.cl)
+#
+#embed_resource(matmul_kernel.cl.res ${CMAKE_CURRENT_SOURCE_DIR}/matmul_kernel.cl)
+#embed_resource(matmul_kernel.ptx.res matmul_kernel.ptx)
+#
+#include_directories(${CMAKE_CURRENT_BINARY_DIR})
+#add_executable(ocl-matmul ${_sources} ${_resources})
+#target_link_libraries(ocl-matmul ${OPENCL_LIBRARY} sampleutil)
+#
+#add_dependencies(ocl-matmul matmul_kernel.cl.res matmul_kernel.ptx.res)
+
+set(_cpp_sources matmul-double.cpp)
+
+create_opencl_targets(_cl_targets matmul-double_kernel)
+
+add_executable(ocl-matmul-double ${_cpp_sources})
+target_link_libraries(ocl-matmul-double ${OPENCL_LIBRARY} sampleutil)
+add_dependencies(ocl-matmul-double ${_cl_targets})
