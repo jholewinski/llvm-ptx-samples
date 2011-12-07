@@ -17,6 +17,7 @@ To compile the samples, CMake and the NVidia CUDA toolkit is required, as well a
 For most systems, the following build commands can be used:
 
     $ cd llvm-ptx-samples
+    $ git submodule init && git submodule update
     $ mkdir build
     $ cd build
     $ cmake ..
