@@ -23,9 +23,9 @@
 # Compiler flags
 set(LIBCLC ${CMAKE_SOURCE_DIR}/libclc)
 set(LIBCLC_FLAGS -I${LIBCLC}/include/ptx -I${LIBCLC}/include/generic -include clc/clc.h -Dcl_clang_storage_class_specifiers)
-set(CLANG_FLAGS -ccc-host-triple ptx32 -S -emit-llvm -O4 ${LIBCLC_FLAGS})
+set(CLANG_FLAGS -target nvptx-unknown-nvcl -S -emit-llvm -O4 ${LIBCLC_FLAGS})
 set(OPT_FLAGS -O3 -loop-unroll)
-set(LLC_FLAGS -mattr=ptx23,double,sm10)
+set(LLC_FLAGS -mcpu=sm_20)
 
 set(RESOURCE_OUTPUT_DIR ${CMAKE_BINARY_DIR}/bin)
 
